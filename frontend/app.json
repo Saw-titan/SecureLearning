@@ -32,7 +32,8 @@
       "expo-video"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/SecureLearning"
     }
   }
 }
