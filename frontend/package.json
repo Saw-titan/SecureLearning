@@ -1,0 +1,37 @@
+{
+  "name": "secure-elearning-frontend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "ts.check": "tsc"
+  },
+  "dependencies": {
+    "expo": "~54.0.0",
+
+    
+    "expo-asset": "~12.0.13",
+    "expo-av": "~16.0.8",
+    "expo-constants": "~18.0.13",
+    "expo-file-system": "~19.0.23",
+    "expo-linking": "~8.0.12",
+    "expo-router": "~6.0.24",
+    "expo-screen-capture": "~8.0.9",
+    "expo-screen-orientation": "~9.0.9",
+    "expo-status-bar": "~3.0.9",
+    "expo-video": "~3.0.16",
+    "expo-web-browser": "~15.0.11",
+    "react": "19.1.0",
+    "react-native": "0.81.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.1.10",
+    "typescript": "~5.3.3"
+  },
+  "private": true
+}
