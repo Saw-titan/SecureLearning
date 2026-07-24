@@ -11,7 +11,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
-    is_admin: bool = False
+    isadmin: bool = False
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -45,7 +45,7 @@ def signup(user_data: UserRegister, db: Session = Depends(get_db)):
     new_user = models.User(
         email=user_data.email,
         password_hash=hashed_pwd,
-        is_admin=user_data.is_admin
+        is_admin=user_data.isadmin
     )
     db.add(new_user)
     db.commit()
