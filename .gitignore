@@ -16,8 +16,13 @@ frontend/web-build/
 frontend/dist/
 
 # Scratch & Tunnels
-*.txt
 *.log
+
+# Environments / Credentials
+.env
+.env.*
+**/.env
+**/.env.*
 pinggy.txt
 serveo.txt
 localhostrun.txt
