@@ -226,5 +226,6 @@ def serve_secure_notes(
 def read_root():
     return {
         "status": "online",
-        "message": "Secure E-Learning API is active. Access docs at /docs"
+        "message": "Secure E-Learning API is active. Access docs at /docs",
+        "version": "fallback-v5"
     }
