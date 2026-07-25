@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, Alert, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { apiRequest } from '../api';
+import * as DocumentPicker from 'expo-document-picker';
 
 interface Course {
   id: number;
@@ -31,6 +32,10 @@ export default function AdminScreen() {
   const [fee, setFee] = useState('');
   const [duration, setDuration] = useState('30');
 
+  // Selected files states
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
+  const [selectedNotes, setSelectedNotes] = useState<any>(null);
+
   // Edit course inputs
   const [editId, setEditId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -39,6 +44,35 @@ export default function AdminScreen() {
   const [editCategory, setEditCategory] = useState('Development');
   const [editFee, setEditFee] = useState('');
   const [editDuration, setEditDuration] = useState('30');
+
+  // File picker handlers
+  const handlePickVideo = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'video/*',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled) {
+        setSelectedVideo(result.assets[0]);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Could not open video file picker.');
+    }
+  };
+
+  const handlePickNotes = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled) {
+        setSelectedNotes(result.assets[0]);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Could not open PDF file picker.');
+    }
+  };
 
   const fetchAdminCatalog = async () => {
     setLoading(true);
@@ -64,8 +98,11 @@ export default function AdminScreen() {
       Alert.alert('Error', 'Please fill in all required fields.');
       return;
     }
+    if (!selectedVideo || !selectedNotes) {
+      Alert.alert('Error', 'Please select both a lecture video and a notes PDF file.');
+      return;
+    }
 
-    // Attach mock assets inside FormData (essential for mobile to pass fastapi UploadFile checks)
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
@@ -74,17 +111,17 @@ export default function AdminScreen() {
     formData.append('fee', parseFloat(fee).toString());
     formData.append('duration_days', parseInt(duration).toString());
     
-    // React Native mock files (must provide name, type, and uri)
+    // Attach real files picked from the device
     formData.append('video', {
-      uri: 'file:///mock_video.mp4',
-      name: 'lecture.mp4',
-      type: 'video/mp4'
+      uri: selectedVideo.uri,
+      name: selectedVideo.name,
+      type: selectedVideo.mimeType || 'video/mp4'
     } as any);
 
     formData.append('notes', {
-      uri: 'file:///mock_notes.pdf',
-      name: 'notes.pdf',
-      type: 'application/pdf'
+      uri: selectedNotes.uri,
+      name: selectedNotes.name,
+      type: selectedNotes.mimeType || 'application/pdf'
     } as any);
 
     setLoading(true);
@@ -178,6 +215,8 @@ export default function AdminScreen() {
     setCategory('Development');
     setFee('');
     setDuration('30');
+    setSelectedVideo(null);
+    setSelectedNotes(null);
   };
 
   const totalCourses = courses.length;
@@ -337,9 +376,35 @@ export default function AdminScreen() {
                 </View>
               </View>
 
-              <Text style={styles.attachmentNotice}>
-                📁 Video & PDF Notes will be automatically compiled as mock attachments from local secure system resources.
-              </Text>
+              {/* Video Attachment Picker */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Lecture Video File *</Text>
+                <TouchableOpacity style={styles.pickerButton} onPress={handlePickVideo}>
+                  <Text style={styles.pickerButtonText}>
+                    {selectedVideo ? "🎥 Change Video File" : "🎥 Select Lecture Video"}
+                  </Text>
+                </TouchableOpacity>
+                {selectedVideo && (
+                  <Text style={styles.pickerSelectedText} numberOfLines={1}>
+                    Selected: {selectedVideo.name} ({Math.round(selectedVideo.size / (1024 * 1024) * 100) / 100} MB)
+                  </Text>
+                )}
+              </View>
+
+              {/* PDF Notes Attachment Picker */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Notes PDF File *</Text>
+                <TouchableOpacity style={styles.pickerButton} onPress={handlePickNotes}>
+                  <Text style={styles.pickerButtonText}>
+                    {selectedNotes ? "📄 Change PDF File" : "📄 Select Slide Notes (PDF)"}
+                  </Text>
+                </TouchableOpacity>
+                {selectedNotes && (
+                  <Text style={styles.pickerSelectedText} numberOfLines={1}>
+                    Selected: {selectedNotes.name} ({Math.round(selectedNotes.size / 1024 * 10) / 10} KB)
+                  </Text>
+                )}
+              </View>
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBtnPrimary} onPress={handleCreateCourse}>
@@ -667,5 +732,26 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pickerButton: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerButtonText: {
+    color: '#E5E7EB',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  pickerSelectedText: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 6,
+    paddingLeft: 4,
   },
 });
