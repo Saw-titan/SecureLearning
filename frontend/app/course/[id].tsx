@@ -8,6 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import * as WebBrowser from 'expo-web-browser';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as FileSystem from 'expo-file-system/legacy';
+import { WebView } from 'react-native-webview';
 import { apiRequest, getCompletedLessons, toggleLessonComplete, getAuthSession, API_URL } from '../api';
 
 const standardCurriculum = [
@@ -84,6 +85,9 @@ export default function SecurePlayerScreen() {
       console.log('Fullscreen orientation error:', err);
     }
   };
+
+  // Notes Viewer State
+  const [isViewingNotes, setIsViewingNotes] = useState(false);
 
   // Check if offline video is available on disk
   const checkOfflineStatus = async () => {
@@ -262,16 +266,9 @@ export default function SecurePlayerScreen() {
     setCompletedLessons(getCompletedLessons(courseId));
   };
 
-  const handleViewNotes = async () => {
+  const handleViewNotes = () => {
     if (!course || !course.notes_path) return;
-    const notesFilename = course.notes_path.split("/").pop() || "";
-    const secureNotesUrl = `${API_URL}/media/notes/${encodeURIComponent(notesFilename)}?token=${session.token}`;
-    
-    try {
-      await WebBrowser.openBrowserAsync(secureNotesUrl);
-    } catch (err) {
-      Alert.alert("Error", "Could not open document reader.");
-    }
+    setIsViewingNotes(true);
   };
 
   // -----------------------------------------
@@ -358,6 +355,40 @@ export default function SecurePlayerScreen() {
         <TouchableOpacity style={styles.fullscreenExitBtn} onPress={toggleFullscreen}>
           <Text style={styles.fullscreenExitBtnText}>✕ Exit Fullscreen</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (isViewingNotes && course && course.notes_path) {
+    const notesFilename = course.notes_path.split("/").pop() || "";
+    const secureNotesUrl = `${API_URL}/media/notes/${encodeURIComponent(notesFilename)}?token=${session.token}`;
+    const pdfViewerUrl = Platform.OS === 'android'
+      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(secureNotesUrl)}`
+      : secureNotesUrl;
+
+    return (
+      <View style={styles.notesViewerContainer}>
+        <View style={styles.notesHeader}>
+          <Text style={styles.notesHeaderTitle} numberOfLines={1}>
+            📚 Notes: {course.title}
+          </Text>
+          <TouchableOpacity style={styles.notesCloseBtn} onPress={() => setIsViewingNotes(false)}>
+            <Text style={styles.notesCloseBtnText}>✕ Close</Text>
+          </TouchableOpacity>
+        </View>
+        <WebView
+          source={{ uri: pdfViewerUrl }}
+          style={styles.notesWebView}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.webViewLoader}>
+              <ActivityIndicator size="large" color="#EC4899" />
+              <Text style={styles.webViewLoaderText}>Decrypting document safely...</Text>
+            </View>
+          )}
+        />
       </View>
     );
   }
@@ -776,5 +807,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  notesViewerContainer: {
+    flex: 1,
+    backgroundColor: '#060608',
+  },
+  notesHeader: {
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    backgroundColor: '#0B0B0F',
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingTop: 10,
+  },
+  notesHeaderTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 10,
+  },
+  notesCloseBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  notesCloseBtnText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  notesWebView: {
+    flex: 1,
+    backgroundColor: '#060608',
+  },
+  webViewLoader: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#060608',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webViewLoaderText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 14,
   },
 });
