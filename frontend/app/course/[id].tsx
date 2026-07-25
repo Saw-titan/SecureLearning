@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ScreenCapture from 'expo-screen-capture';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
@@ -134,6 +134,30 @@ export default function SecurePlayerScreen() {
     };
     configureAudio();
 
+    // Web-specific security hardening (blocks right-clicks, Developer Tools shortcuts, print, and save)
+    let handleKeyDown: (e: any) => void;
+    let handleContextMenu: (e: any) => void;
+
+    if (Platform.OS === 'web') {
+      handleKeyDown = (e: any) => {
+        if (
+          e.key === 'F12' ||
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c' || e.key === 'J' || e.key === 'j')) ||
+          (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S' || e.key === 'p' || e.key === 'P'))
+        ) {
+          e.preventDefault();
+          Alert.alert('Security Block', 'Developer shortcuts and printing are disabled for copyright protection.');
+        }
+      };
+
+      handleContextMenu = (e: any) => {
+        e.preventDefault();
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('contextmenu', handleContextMenu);
+    }
+
     // Check offline status and fetch details
     checkOfflineStatus();
     fetchCourseDetail();
@@ -143,6 +167,10 @@ export default function SecurePlayerScreen() {
       subscription.remove();
       ScreenCapture.allowScreenCaptureAsync().catch(() => {});
       if (activeTimer) clearInterval(activeTimer);
+      if (Platform.OS === 'web') {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('contextmenu', handleContextMenu);
+      }
     };
   }, [courseId]);
 
