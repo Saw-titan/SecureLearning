@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ScreenCapture from 'expo-screen-capture';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as WebBrowser from 'expo-web-browser';
@@ -49,6 +50,7 @@ const clearCachedCourseMetadata = async (id: number) => {
 };
 
 export default function SecurePlayerScreen() {
+  usePreventScreenCapture();
   const router = useRouter();
   const session = getAuthSession();
   const { id } = useLocalSearchParams();
@@ -98,17 +100,7 @@ export default function SecurePlayerScreen() {
   }, [videoSourceUri]);
 
   useEffect(() => {
-    // 1. Activate Hardware Screen Capture Protection
-    const activateProtection = async () => {
-      try {
-        await ScreenCapture.preventScreenCaptureAsync();
-      } catch (err) {
-        console.log('Screen capture prevention error:', err);
-      }
-    };
-    activateProtection();
-
-    // 2. Add alert listener for screenshot gestures
+    // 1. Add alert listener for screenshot gestures
     const subscription = ScreenCapture.addScreenshotListener(() => {
       Alert.alert(
         'Security Violation',
@@ -165,7 +157,6 @@ export default function SecurePlayerScreen() {
     // Clean up on unmount
     return () => {
       subscription.remove();
-      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
       if (activeTimer) clearInterval(activeTimer);
       if (Platform.OS === 'web') {
         window.removeEventListener('keydown', handleKeyDown);
