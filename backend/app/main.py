@@ -104,17 +104,18 @@ def serve_secure_video(
     if not course:
         raise HTTPException(status_code=404, detail="Resource not found in course list")
         
-    # 3. Check enrollment
-    enrollment = db.query(models.Enrollment).filter(
-        models.Enrollment.user_id == user.id,
-        models.Enrollment.course_id == course.id
-    ).first()
-    
-    if not enrollment:
-        raise HTTPException(status_code=403, detail="Course not purchased")
+    # 3. Check enrollment (bypassed for admins)
+    if not user.is_admin:
+        enrollment = db.query(models.Enrollment).filter(
+            models.Enrollment.user_id == user.id,
+            models.Enrollment.course_id == course.id
+        ).first()
         
-    if enrollment.expires_at < auth_utils.datetime.datetime.utcnow():
-        raise HTTPException(status_code=403, detail="Course enrollment has expired")
+        if not enrollment:
+            raise HTTPException(status_code=403, detail="Course not purchased")
+            
+        if enrollment.expires_at < auth_utils.datetime.datetime.utcnow():
+            raise HTTPException(status_code=403, detail="Course enrollment has expired")
         
     # 4. Return file if authenticated and active
     video_file_path = os.path.join(VIDEOS_DIR, filename)
@@ -192,17 +193,18 @@ def serve_secure_notes(
     if not course:
         raise HTTPException(status_code=404, detail="Resource not found in course list")
         
-    # 3. Check enrollment
-    enrollment = db.query(models.Enrollment).filter(
-        models.Enrollment.user_id == user.id,
-        models.Enrollment.course_id == course.id
-    ).first()
-    
-    if not enrollment:
-        raise HTTPException(status_code=403, detail="Course not purchased")
+    # 3. Check enrollment (bypassed for admins)
+    if not user.is_admin:
+        enrollment = db.query(models.Enrollment).filter(
+            models.Enrollment.user_id == user.id,
+            models.Enrollment.course_id == course.id
+        ).first()
         
-    if enrollment.expires_at < auth_utils.datetime.datetime.utcnow():
-        raise HTTPException(status_code=403, detail="Course enrollment has expired")
+        if not enrollment:
+            raise HTTPException(status_code=403, detail="Course not purchased")
+            
+        if enrollment.expires_at < auth_utils.datetime.datetime.utcnow():
+            raise HTTPException(status_code=403, detail="Course enrollment has expired")
         
     # 4. Return file if authenticated and active
     notes_file_path = os.path.join(NOTES_DIR, filename)
