@@ -6,6 +6,7 @@ import { usePreventScreenCapture } from 'expo-screen-capture';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as WebBrowser from 'expo-web-browser';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import * as FileSystem from 'expo-file-system/legacy';
 import { apiRequest, getCompletedLessons, toggleLessonComplete, getAuthSession, API_URL } from '../api';
 
@@ -66,6 +67,23 @@ export default function SecurePlayerScreen() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isOfflineAvailable, setIsOfflineAvailable] = useState(false);
+
+  // Custom Fullscreen State & Handles
+  const [isCustomFullscreen, setIsCustomFullscreen] = useState(false);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (isCustomFullscreen) {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+        setIsCustomFullscreen(false);
+      } else {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        setIsCustomFullscreen(true);
+      }
+    } catch (err) {
+      console.log('Fullscreen orientation error:', err);
+    }
+  };
 
   // Check if offline video is available on disk
   const checkOfflineStatus = async () => {
@@ -158,6 +176,7 @@ export default function SecurePlayerScreen() {
     return () => {
       subscription.remove();
       if (activeTimer) clearInterval(activeTimer);
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT).catch(() => {});
       if (Platform.OS === 'web') {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('contextmenu', handleContextMenu);
@@ -326,6 +345,23 @@ export default function SecurePlayerScreen() {
     );
   }
 
+  if (isCustomFullscreen && course && course.video_url) {
+    return (
+      <View style={styles.fullscreenContainer}>
+        <VideoView
+          ref={videoViewRef}
+          player={player}
+          allowsFullscreen={false}
+          allowsPictureInPicture={true}
+          style={styles.fullscreenVideoPlayer}
+        />
+        <TouchableOpacity style={styles.fullscreenExitBtn} onPress={toggleFullscreen}>
+          <Text style={styles.fullscreenExitBtnText}>✕ Exit Fullscreen</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
       {/* Secure Video Player */}
@@ -333,7 +369,7 @@ export default function SecurePlayerScreen() {
         <VideoView
           ref={videoViewRef}
           player={player}
-          allowsFullscreen={true}
+          allowsFullscreen={false}
           allowsPictureInPicture={true}
           style={styles.videoPlayer}
         />
@@ -349,7 +385,7 @@ export default function SecurePlayerScreen() {
         {course.video_url && (
           <TouchableOpacity 
             style={[styles.controlBtn, { flex: 1.2 }]} 
-            onPress={() => videoViewRef.current?.enterFullscreen()}
+            onPress={toggleFullscreen}
           >
             <Text style={styles.controlBtnText}>📺 Full Screen</Text>
           </TouchableOpacity>
@@ -712,5 +748,33 @@ const styles = StyleSheet.create({
     color: '#E5E7EB',
     fontSize: 15,
     fontWeight: '600',
+  },
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenVideoPlayer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000000',
+  },
+  fullscreenExitBtn: {
+    position: 'absolute',
+    top: 24,
+    right: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    zIndex: 99999,
+  },
+  fullscreenExitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

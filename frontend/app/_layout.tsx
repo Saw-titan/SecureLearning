@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 
 export default function RootLayout() {
+  usePreventScreenCapture();
   return (
     <>
       <StatusBar style="light" />
