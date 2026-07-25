@@ -1,4 +1,4 @@
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.29.2:8000/api";
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://securelearning-9fyz.onrender.com/api";
 
 let authToken: string | null = null;
 let userEmail: string = "student@elearning.com";
